@@ -3,8 +3,18 @@ import pandas as pd
 import altair as alt
 import plotly.express as px
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 df = pd.read_csv('data/insurance.csv')
+
+def filter(df):
+    st.write('## Filter Data')
+    smokers = st.checkbox('Smokers', value=True)
+    if smokers:
+        df = df[df['smoker']=='yes']
+    else:
+        df = df[df['smoker']=='no']
+    return df
 
 def scatter(df):
     fig = plt.figure(figsize=(10,8))
@@ -17,35 +27,29 @@ def scatter(df):
     ax.scatter(x, y, z)
     st.pyplot(fig)
 
-def pearson(df):
-    df_corr = df.corr(method='pearson')
-    mask = np.zeros_like(df_corr, dtype=np.bool)
-    mask[np.triu_indices_from(mask)] = True
-    sns.heatmap(df_corr,annot=True,mask=mask,cmap='viridis',annot_kws={"size": 8},linewidths=0.5)
-    plt.ylim(df_corr.shape[1],0);
-    plt.title('Pearson Correlation')
-    st.pyplot()
+def stacked(df):
+    df.groupby(['smoker','region']).size().unstack().plot(kind='bar', stacked=True)
+    st.pyplot(plt)
+
+def parallel(df):
+    df['smoker'] = df['smoker'].replace({'no':0, 'yes':1})
+    df['sex'] = df['sex'].replace({'male':0, 'female':1})
+    df['region']= df['region'].replace({'northwest':0, 'northeast':1, 'southwest':2, 'southeast':3})
+    fig = px.parallel_coordinates(df, color="smoker",
+                              dimensions = ['age','sex','bmi',
+                                            'children',	'region','charges'])
+    st.plotly_chart(fig)
 
 def dashboard_body():
     st.title('Insurance Dashboard')
     st.write('This is a simple dashboard for insurance data')
-
+    filter(df)
     st.write('## Data')
     st.write(df)
 
     st.write('## Scatter Plot')
     scatter(df)
 
-    pearson(df)
+    stacked(df)
 
-    st.write('## Altair Plot')
-    chart = alt.Chart(df).mark_circle().encode(
-        x='age',
-        y='bmi',
-        size='charges'
-    ).interactive()
-    st.altair_chart(chart)
-
-    st.write('## Plotly Plot')
-    fig = px.scatter_3d(df, x='age', y='bmi', z='charges', size='charges')
-    st.plotly_chart(fig)
+    parallel(df)
