@@ -1,20 +1,13 @@
 import streamlit as st
 import pandas as pd
-import altair as alt
-import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.express as px
 
-df = pd.read_csv('data/insurance.csv')
+# Set the option to opt-in to the future behavior
+pd.set_option('future.no_silent_downcasting', True)
 
-def filter(df):
-    st.write('## Filter Data')
-    smokers = st.checkbox('Smokers', value=True)
-    if smokers:
-        df = df[df['smoker']=='yes']
-    else:
-        df = df[df['smoker']=='no']
-    return df
+df = pd.read_csv('inputs/insurance.csv')
 
 def scatter(df):
     fig = plt.figure(figsize=(10,8))
@@ -40,16 +33,25 @@ def parallel(df):
                                             'children',	'region','charges'])
     st.plotly_chart(fig)
 
+def filter(df):
+    age_input = st.sidebar.select_slider("Age", options=range(0, 100))
+    age_filter = df["age"] > age_input
+    df_filter = df[age_filter]
+
+def smoker(df):
+    smoker_input = st.sidebar.selectbox("Smoker", options=['yes', 'no'])
+    smoker_filter = df["smoker"] == smoker_input
+    df_filter = df[smoker_filter]
+
 def dashboard_body():
-    st.title('Insurance Dashboard')
-    st.write('This is a simple dashboard for insurance data')
-    filter(df)
-    st.write('## Data')
-    st.write(df)
-
-    st.write('## Scatter Plot')
-    scatter(df)
-
-    stacked(df)
-
-    parallel(df)
+    st.title('Dashboard')
+    st.write('This is the dashboard page')
+    st.write('Scatter plot of age, bmi and charges')
+    age_input = st.sidebar.select_slider("Age", options=range(0, 100))
+    age_filter = df["age"] > age_input
+    smoker_input = st.sidebar.selectbox("Smoker", options=['yes', 'no'])
+    smoker_filter = df["smoker"] == smoker_input
+    df_filter = df.loc[age_filter & smoker_filter]
+    scatter(df_filter)
+    stacked(df_filter)
+    parallel(df_filter)
